@@ -15,9 +15,9 @@
     
     <!-- Background colors -->
     <color name="background_light">#FAFAFA</color>
-    <color name="background_dark">#121212</color>
+    <color name="background_dark">#0D1117</color>
     <color name="surface_light">#FFFFFF</color>
-    <color name="surface_dark">#1E1E1E</color>
+    <color name="surface_dark">#161B22</color>
     
     <!-- Text colors -->
     <color name="text_primary_light">#212121</color>
@@ -32,9 +32,9 @@
     
     <!-- Card and divider colors -->
     <color name="card_background_light">#FFFFFF</color>
-    <color name="card_background_dark">#2D2D2D</color>
+    <color name="card_background_dark">#21262D</color>
     <color name="divider_light">#E0E0E0</color>
-    <color name="divider_dark">#3E3E3E</color>
+    <color name="divider_dark">#30363D</color>
     
     <!-- Button colors -->
     <color name="button_primary_gradient_start">#FF6B35</color>
@@ -44,8 +44,8 @@
     
     <!-- Navigation colors -->
     <color name="navigation_background_light">#FAFAFA</color>
-    <color name="navigation_background_dark">#1F1F1F</color>
+    <color name="navigation_background_dark">#0D1117</color>
     <color name="navigation_selected">#FF6B35</color>
     <color name="navigation_unselected_light">#9E9E9E</color>
-    <color name="navigation_unselected_dark">#757575</color>
+    <color name="navigation_unselected_dark">#6E7681</color>
 </resources>

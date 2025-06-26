@@ -38,13 +38,13 @@
     <item>
         <shape android:shape="oval">
             <gradient
-                android:startColor="@color/button_primary_gradient_start"
-                android:endColor="@color/button_primary_gradient_end"
+                android:startColor="#FF6B35"
+                android:endColor="#F7931E"
                 android:angle="135"
                 android:type="linear" />
             <stroke 
                 android:width="4dp" 
-                android:color="?attr/colorOnBackground" />
+                android:color="#FFFFFF" />
             <size
                 android:width="200dp"
                 android:height="200dp" />

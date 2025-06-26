@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/android:colorBackground"
+    android:background="#0D1117"
     android:padding="16dp">
 
     <TextView
@@ -14,7 +14,7 @@
         android:text="📋 Histórico de Reports"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="?attr/colorOnBackground"
+        android:textColor="#FFFFFF"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="24dp"
         app:layout_constraintTop_toTopOf="parent"
