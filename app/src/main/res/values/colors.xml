@@ -1,5 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Light theme colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Primary colors -->
+    <color name="primary_light">#1976D2</color>
+    <color name="primary_dark">#0D47A1</color>
+    <color name="primary_variant">#3F51B5</color>
+    
+    <!-- Secondary colors -->
+    <color name="secondary_light">#FF6F00</color>
+    <color name="secondary_dark">#E65100</color>
+    
+    <!-- Background colors -->
+    <color name="background_light">#FAFAFA</color>
+    <color name="background_dark">#121212</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="surface_dark">#1E1E1E</color>
+    
+    <!-- Text colors -->
+    <color name="text_primary_light">#212121</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_light">#757575</color>
+    <color name="text_secondary_dark">#B3B3B3</color>
+    
+    <!-- Accent colors -->
+    <color name="accent_green">#4CAF50</color>
+    <color name="accent_orange">#FF9800</color>
+    <color name="accent_red">#F44336</color>
+    
+    <!-- Card and divider colors -->
+    <color name="card_background_light">#FFFFFF</color>
+    <color name="card_background_dark">#2D2D2D</color>
+    <color name="divider_light">#E0E0E0</color>
+    <color name="divider_dark">#3E3E3E</color>
+    
+    <!-- Button colors -->
+    <color name="button_primary_gradient_start">#FF6B35</color>
+    <color name="button_primary_gradient_end">#F7931E</color>
+    <color name="button_primary_dark_gradient_start">#FF5722</color>
+    <color name="button_primary_dark_gradient_end">#FF9800</color>
+    
+    <!-- Navigation colors -->
+    <color name="navigation_background_light">#FAFAFA</color>
+    <color name="navigation_background_dark">#1F1F1F</color>
+    <color name="navigation_selected">#FF6B35</color>
+    <color name="navigation_unselected_light">#9E9E9E</color>
+    <color name="navigation_unselected_dark">#757575</color>
 </resources>

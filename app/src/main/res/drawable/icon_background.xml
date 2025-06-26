@@ -4,12 +4,5 @@
     <gradient
         android:startColor="@color/button_primary_gradient_start"
         android:endColor="@color/button_primary_gradient_end"
-        android:angle="135"
-        android:type="linear" />
-    <stroke 
-        android:width="4dp" 
-        android:color="?attr/colorOnBackground" />
-    <size
-        android:width="200dp"
-        android:height="200dp" />
+        android:angle="45" />
 </shape>

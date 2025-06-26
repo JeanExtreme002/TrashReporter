@@ -373,8 +373,10 @@ class MainActivity : AppCompatActivity(), LocationListener {
         recordsScreen.visibility = View.GONE
         
         // Update navigation buttons appearance
-        btnNavReport.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
-        btnNavRecords.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+        btnNavReport.setTextColor(ContextCompat.getColor(this, R.color.navigation_selected))
+        btnNavReport.alpha = 1.0f
+        btnNavRecords.setTextColor(ContextCompat.getColor(this, R.color.navigation_unselected_dark))
+        btnNavRecords.alpha = 0.6f
     }
     
     private fun showRecordsScreen() {
@@ -382,8 +384,10 @@ class MainActivity : AppCompatActivity(), LocationListener {
         recordsScreen.visibility = View.VISIBLE
         
         // Update navigation buttons appearance
-        btnNavReport.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
-        btnNavRecords.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
+        btnNavReport.setTextColor(ContextCompat.getColor(this, R.color.navigation_unselected_dark))
+        btnNavReport.alpha = 0.6f
+        btnNavRecords.setTextColor(ContextCompat.getColor(this, R.color.navigation_selected))
+        btnNavRecords.alpha = 1.0f
         
         // Load records
         loadRecords()
