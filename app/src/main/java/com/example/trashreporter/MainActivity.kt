@@ -2,10 +2,13 @@ package com.example.trashreporter
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -22,19 +25,60 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
 
-class MainActivity : AppCompatActivity() {
+// Data class para representar um registro
+data class ReportRecord(
+    val coords: String,
+    val datetime: String,
+    val status: String
+)
+
+// Adapter para a RecyclerView
+class RecordsAdapter(private val records: List<ReportRecord>) : 
+    RecyclerView.Adapter<RecordsAdapter.ViewHolder>() {
+    
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val tvCoords: TextView = view.findViewById(R.id.tv_coords)
+        val tvDatetime: TextView = view.findViewById(R.id.tv_datetime)
+        val tvStatus: TextView = view.findViewById(R.id.tv_status)
+    }
+    
+    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
+        val view = android.view.LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_record, parent, false)
+        return ViewHolder(view)
+    }
+    
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val record = records[position]
+        holder.tvCoords.text = "Coordenadas: ${record.coords}"
+        holder.tvDatetime.text = "Data: ${record.datetime}"
+        holder.tvStatus.text = "Status: ${record.status}"
+    }
+    
+    override fun getItemCount() = records.size
+}
+
+class MainActivity : AppCompatActivity(), LocationListener {
 
     private lateinit var btnReport: Button
     private lateinit var tvCountdown: TextView
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationManager: LocationManager
+    
+    // Navigation
+    private lateinit var btnNavReport: Button
+    private lateinit var btnNavRecords: Button
+    private lateinit var reportScreen: View
+    private lateinit var recordsScreen: View
+    private lateinit var rvRecords: RecyclerView
     
     private var countDownTimer: CountDownTimer? = null
     private var currentLocation: Location? = null
@@ -60,9 +104,20 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         
+        // Initialize views
         btnReport = findViewById(R.id.btn_report)
         tvCountdown = findViewById(R.id.tv_countdown)
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        
+        // Navigation views
+        btnNavReport = findViewById(R.id.btn_nav_report)
+        btnNavRecords = findViewById(R.id.btn_nav_records)
+        reportScreen = findViewById(R.id.report_screen)
+        recordsScreen = findViewById(R.id.records_screen)
+        rvRecords = findViewById(R.id.rv_records)
+        
+        // Setup RecyclerView
+        rvRecords.layoutManager = LinearLayoutManager(this)
         
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -70,6 +125,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         
+        // Report button click
         btnReport.setOnClickListener {
             if (checkPermissions()) {
                 getCurrentLocation()
@@ -78,8 +134,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
+        // Navigation clicks
+        btnNavReport.setOnClickListener {
+            showReportScreen()
+        }
+        
+        btnNavRecords.setOnClickListener {
+            showRecordsScreen()
+        }
+        
         // Check if there's an active countdown
         checkCountdownState()
+        
+        // Start with report screen
+        showReportScreen()
     }
     
     private fun checkPermissions(): Boolean {
@@ -124,18 +192,39 @@ class MainActivity : AppCompatActivity() {
     
     @SuppressLint("MissingPermission")
     private fun getCurrentLocation() {
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location: Location? ->
-                if (location != null) {
-                    currentLocation = location
-                    openCamera()
+        try {
+            // Try to get last known location first
+            val lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            
+            if (lastKnownLocation != null) {
+                currentLocation = lastKnownLocation
+                openCamera()
+            } else {
+                // Request location updates
+                Toast.makeText(this, "Obtendo localização...", Toast.LENGTH_SHORT).show()
+                
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    locationManager.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        1000L,
+                        1f,
+                        this
+                    )
+                } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                    locationManager.requestLocationUpdates(
+                        LocationManager.NETWORK_PROVIDER,
+                        1000L,
+                        1f,
+                        this
+                    )
                 } else {
-                    Toast.makeText(this, "Não foi possível obter a localização", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "GPS e rede desabilitados", Toast.LENGTH_SHORT).show()
                 }
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Erro ao obter localização", Toast.LENGTH_SHORT).show()
-            }
+        } catch (e: SecurityException) {
+            Toast.makeText(this, "Erro de permissão de localização", Toast.LENGTH_SHORT).show()
+        }
     }
     
     private fun openCamera() {
@@ -278,8 +367,98 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    // Navigation methods
+    private fun showReportScreen() {
+        reportScreen.visibility = View.VISIBLE
+        recordsScreen.visibility = View.GONE
+        
+        // Update navigation buttons appearance
+        btnNavReport.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
+        btnNavRecords.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+    }
+    
+    private fun showRecordsScreen() {
+        reportScreen.visibility = View.GONE
+        recordsScreen.visibility = View.VISIBLE
+        
+        // Update navigation buttons appearance
+        btnNavReport.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+        btnNavRecords.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
+        
+        // Load records
+        loadRecords()
+    }
+    
+    private fun loadRecords() {
+        val executor = Executors.newSingleThreadExecutor()
+        
+        executor.execute {
+            try {
+                val macAddress = getMacAddress()
+                val url = URL("http://localhost:2000/api/$macAddress")
+                val connection = url.openConnection() as HttpURLConnection
+                
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                
+                val responseCode = connection.responseCode
+                
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().readText()
+                    val jsonArray = JSONArray(response)
+                    
+                    val records = mutableListOf<ReportRecord>()
+                    for (i in 0 until jsonArray.length()) {
+                        val item = jsonArray.getJSONObject(i)
+                        records.add(
+                            ReportRecord(
+                                coords = item.getString("coords"),
+                                datetime = item.getString("datetime"),
+                                status = item.getString("status")
+                            )
+                        )
+                    }
+                    
+                    runOnUiThread {
+                        val adapter = RecordsAdapter(records)
+                        rvRecords.adapter = adapter
+                        
+                        if (records.isEmpty()) {
+                            Toast.makeText(this@MainActivity, "Nenhum registro encontrado", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Erro ao carregar registros", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                
+                connection.disconnect()
+                
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+    
+    // LocationListener methods
+    override fun onLocationChanged(location: Location) {
+        currentLocation = location
+        locationManager.removeUpdates(this)
+        openCamera()
+    }
+    
+    override fun onProviderEnabled(provider: String) {}
+    override fun onProviderDisabled(provider: String) {}
+    @Deprecated("Deprecated in Java")
+    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+    
     override fun onDestroy() {
         super.onDestroy()
         countDownTimer?.cancel()
+        locationManager.removeUpdates(this)
     }
 }
