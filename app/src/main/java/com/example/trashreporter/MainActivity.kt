@@ -38,6 +38,7 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import com.example.trashreporter.utils.ConfigReader
 
 // Data class para representar um registro
 data class ReportRecord(
@@ -96,6 +97,7 @@ class RecordsAdapter(private val records: List<ReportRecord>) :
 class MainActivity : AppCompatActivity(), LocationListener {
 
     private lateinit var btnReport: Button
+    private lateinit var btnResetCountdown: Button
     private lateinit var tvCountdown: TextView
     private lateinit var locationManager: LocationManager
     
@@ -135,6 +137,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         // Initialize views
         btnReport = findViewById(R.id.btn_report)
+        btnResetCountdown = findViewById(R.id.btn_reset_countdown)
         tvCountdown = findViewById(R.id.tv_countdown)
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         
@@ -163,6 +166,38 @@ class MainActivity : AppCompatActivity(), LocationListener {
             }
         }
         
+        // Long press no botão de report para mostrar/esconder botão de reset (modo debug)
+        btnReport.setOnLongClickListener {
+            if (btnResetCountdown.visibility == View.GONE) {
+                btnResetCountdown.visibility = View.VISIBLE
+                
+                // Também força a configuração do IP se necessário
+                val currentIp = getCurrentNetworkIp()
+                if (currentIp != null) {
+                    ConfigReader.setApiConfig(this, currentIp)
+                    Log.d("CONFIG_DEBUG", "IP atualizado para: $currentIp")
+                    Toast.makeText(this, "Modo debug ativado - IP: $currentIp", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, "Modo debug ativado", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                btnResetCountdown.visibility = View.GONE
+                Toast.makeText(this, "Modo debug desativado", Toast.LENGTH_SHORT).show()
+            }
+            true
+        }
+        
+        // Reset countdown button click
+        btnResetCountdown.setOnClickListener {
+            resetCountdown()
+            Toast.makeText(this, "Countdown resetado!", Toast.LENGTH_SHORT).show()
+        }
+        
+        // Double tap no countdown para alterar IP (modo debug)
+        tvCountdown.setOnClickListener {
+            showIpConfigDialog()
+        }
+        
         // Navigation clicks
         btnNavReport.setOnClickListener {
             showReportScreen()
@@ -177,6 +212,12 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         // Start with report screen
         showReportScreen()
+        
+        // Teste de configuração (debug)
+        testConfigReading()
+        
+        // Testar leitura da configuração (modo debug)
+        testConfigReading()
     }
     
     private fun checkPermissions(): Boolean {
@@ -277,17 +318,46 @@ class MainActivity : AppCompatActivity(), LocationListener {
     }
     
     private fun getApiBaseUrl(): String {
+        // Log detalhado para debug
+        Log.d("API_URL", "=== DEBUG DETECÇÃO DE DISPOSITIVO ===")
+        Log.d("API_URL", "Build.FINGERPRINT: ${Build.FINGERPRINT}")
+        Log.d("API_URL", "Build.MODEL: ${Build.MODEL}")
+        Log.d("API_URL", "Build.PRODUCT: ${Build.PRODUCT}")
+        Log.d("API_URL", "Build.DEVICE: ${Build.DEVICE}")
+        
         // Detecta automaticamente se está rodando no emulador ou dispositivo físico
-        return if (Build.FINGERPRINT.contains("generic") || 
+        val isEmulator = Build.FINGERPRINT.contains("generic") || 
                    Build.FINGERPRINT.contains("unknown") ||
                    Build.MODEL.contains("google_sdk") ||
                    Build.MODEL.contains("Emulator") ||
-                   Build.MODEL.contains("Android SDK built for x86")) {
+                   Build.MODEL.contains("Android SDK built for x86")
+        
+        Log.d("API_URL", "É emulador? $isEmulator")
+        
+        return if (isEmulator) {
             Log.d("API_URL", "Detectado emulador, usando 10.0.2.2")
-            "http://10.0.2.2:2000/api" // Emulador
+            "http://10.0.2.2:2000/api" // Emulador sempre usa este IP
         } else {
-            Log.d("API_URL", "Detectado dispositivo físico, usando IP da rede local")
-            "http://192.168.0.13:2000/api" // IP fixo da máquina
+            // Para dispositivo físico, usa o IP do arquivo .env
+            Log.d("API_URL", "Detectado dispositivo físico, carregando configuração...")
+            
+            try {
+                val apiUrl = ConfigReader.getApiBaseUrl(this)
+                val host = ConfigReader.getApiHost(this)
+                val port = ConfigReader.getApiPort(this)
+                val configSource = ConfigReader.getConfigSource(this)
+                
+                Log.d("API_URL", "Host: $host (de: $configSource)")
+                Log.d("API_URL", "Port: $port") 
+                Log.d("API_URL", "URL final: $apiUrl")
+                
+                apiUrl
+            } catch (e: Exception) {
+                Log.e("API_URL", "Erro ao carregar configuração: ${e.message}", e)
+                val fallbackUrl = "http://10.208.16.44:2000/api"
+                Log.w("API_URL", "Usando URL de fallback: $fallbackUrl")
+                fallbackUrl
+            }
         }
     }
     
@@ -360,6 +430,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         btnReport.isEnabled = false
         tvCountdown.visibility = View.VISIBLE
+        btnResetCountdown.visibility = View.VISIBLE // Mostra o botão de reset quando countdown está ativo
         
         countDownTimer = object : CountDownTimer(oneHourInMillis, 1000) {
             override fun onTick(millisUntilFinished: Long) {
@@ -373,6 +444,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
             override fun onFinish() {
                 btnReport.isEnabled = true
                 tvCountdown.visibility = View.GONE
+                btnResetCountdown.visibility = View.GONE // Esconde o botão quando countdown termina
                 
                 // Clear saved countdown
                 val prefs = getSharedPreferences("countdown_prefs", MODE_PRIVATE)
@@ -394,6 +466,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 // Continue countdown
                 btnReport.isEnabled = false
                 tvCountdown.visibility = View.VISIBLE
+                btnResetCountdown.visibility = View.VISIBLE // Mostra o botão de reset
                 
                 countDownTimer = object : CountDownTimer(remainingTime, 1000) {
                     override fun onTick(millisUntilFinished: Long) {
@@ -407,6 +480,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
                     override fun onFinish() {
                         btnReport.isEnabled = true
                         tvCountdown.visibility = View.GONE
+                        btnResetCountdown.visibility = View.GONE // Esconde o botão
                         prefs.edit().remove("countdown_end_time").apply()
                         Toast.makeText(this@MainActivity, "Você pode reportar novamente!", Toast.LENGTH_SHORT).show()
                     }
@@ -416,6 +490,22 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 prefs.edit().remove("countdown_end_time").apply()
             }
         }
+    }
+    
+    private fun resetCountdown() {
+        // Para o timer atual se estiver rodando
+        countDownTimer?.cancel()
+        
+        // Limpa as preferências salvas
+        val prefs = getSharedPreferences("countdown_prefs", MODE_PRIVATE)
+        prefs.edit().remove("countdown_end_time").apply()
+        
+        // Reabilita o botão e esconde o countdown
+        btnReport.isEnabled = true
+        tvCountdown.visibility = View.GONE
+        btnResetCountdown.visibility = View.GONE // Esconde o botão de reset
+        
+        Log.d("COUNTDOWN_RESET", "Countdown foi resetado")
     }
     
     // Navigation methods
@@ -522,5 +612,93 @@ class MainActivity : AppCompatActivity(), LocationListener {
         super.onDestroy()
         countDownTimer?.cancel()
         locationManager.removeUpdates(this)
+    }
+    
+    private fun getCurrentNetworkIp(): String? {
+        try {
+            val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+            val wifiInfo = wifiManager.connectionInfo
+            val ipAddress = wifiInfo.ipAddress
+            
+            if (ipAddress != 0) {
+                return String.format(
+                    "%d.%d.%d.%d",
+                    ipAddress and 0xff,
+                    ipAddress shr 8 and 0xff,
+                    ipAddress shr 16 and 0xff,
+                    ipAddress shr 24 and 0xff
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("NETWORK_IP", "Erro ao obter IP: ${e.message}")
+        }
+        
+        return null
+    }
+    
+    private fun testConfigReading() {
+        Log.d("CONFIG_TEST", "=== TESTE DE CONFIGURAÇÃO ===")
+        try {
+            val config = ConfigReader.loadConfig(this)
+            val source = ConfigReader.getConfigSource(this)
+            val hasPrefs = ConfigReader.hasPreferencesConfig(this)
+            
+            Log.d("CONFIG_TEST", "Configuração carregada: $config")
+            Log.d("CONFIG_TEST", "Origem da configuração: $source")
+            Log.d("CONFIG_TEST", "Tem configuração em SharedPreferences: $hasPrefs")
+            
+            val host = ConfigReader.getApiHost(this)
+            val port = ConfigReader.getApiPort(this)
+            val url = ConfigReader.getApiBaseUrl(this)
+            
+            Log.d("CONFIG_TEST", "Host: $host")
+            Log.d("CONFIG_TEST", "Port: $port")
+            Log.d("CONFIG_TEST", "URL: $url")
+            
+            Toast.makeText(this, "Config ($source): $host:$port", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Log.e("CONFIG_TEST", "Erro no teste: ${e.message}", e)
+            Toast.makeText(this, "Erro ao ler config: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+        Log.d("CONFIG_TEST", "=== FIM DO TESTE ===")
+    }
+    
+    private fun showIpConfigDialog() {
+        val currentConfig = ConfigReader.getCurrentConfig(this)
+        val currentHost = ConfigReader.getApiHost(this)
+        val configSource = ConfigReader.getConfigSource(this)
+        val debugInfo = ConfigReader.debugConfig(this)
+        
+        Log.d("IP_CONFIG", debugInfo)
+        
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("🔧 Configurar IP da API")
+        builder.setMessage("IP atual: $currentConfig\nOrigem: $configSource\n\n⚠️ Se alterou o .env, use 'Reset' primeiro")
+        
+        val input = android.widget.EditText(this)
+        input.hint = "Ex: 10.208.16.44"
+        input.setText(currentHost)
+        builder.setView(input)
+        
+        builder.setPositiveButton("✅ Salvar") { _, _ ->
+            val newHost = input.text.toString().trim()
+            if (newHost.isNotEmpty()) {
+                ConfigReader.updateApiHost(this, newHost)
+                Log.d("IP_CONFIG", "IP alterado para: $newHost")
+            }
+        }
+        
+        builder.setNeutralButton("🔄 Reset para .env") { _, _ ->
+            ConfigReader.clearPreferencesConfig(this)
+            val newDebugInfo = ConfigReader.debugConfig(this)
+            Log.d("IP_CONFIG", "Após reset:\n$newDebugInfo")
+        }
+        
+        builder.setNegativeButton("� Debug Info") { _, _ ->
+            Toast.makeText(this, debugInfo, Toast.LENGTH_LONG).show()
+            Log.d("IP_CONFIG", debugInfo)
+        }
+        
+        builder.show()
     }
 }

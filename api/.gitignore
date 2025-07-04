@@ -43,11 +43,6 @@ Thumbs.db
 *.log
 logs/
 
-# Environment variables
-.env
-.env.local
-.env.production
-
 # Database (if added later)
 *.db
 *.sqlite
