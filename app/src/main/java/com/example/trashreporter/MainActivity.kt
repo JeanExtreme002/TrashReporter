@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.provider.MediaStore
 import android.util.Base64
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -253,16 +254,18 @@ class MainActivity : AppCompatActivity(), LocationListener {
     }
     
     private fun getApiBaseUrl(): String {
-        // Para emulador Android, localhost é acessível via 10.0.2.2
-        // Para dispositivo físico na mesma rede, use o IP da máquina
-        return "http://10.0.2.2:2000/api"
-        
-        // Alternativa: detectar automaticamente
-        // return if (Build.FINGERPRINT.contains("generic")) {
-        //     "http://10.0.2.2:2000/api" // Emulador
-        // } else {
-        //     "http://192.168.1.100:2000/api" // Dispositivo físico (substitua pelo IP da sua máquina)
-        // }
+        // Detecta automaticamente se está rodando no emulador ou dispositivo físico
+        return if (Build.FINGERPRINT.contains("generic") || 
+                   Build.FINGERPRINT.contains("unknown") ||
+                   Build.MODEL.contains("google_sdk") ||
+                   Build.MODEL.contains("Emulator") ||
+                   Build.MODEL.contains("Android SDK built for x86")) {
+            Log.d("API_URL", "Detectado emulador, usando 10.0.2.2")
+            "http://10.0.2.2:2000/api" // Emulador
+        } else {
+            Log.d("API_URL", "Detectado dispositivo físico, usando IP da rede local")
+            "http://192.168.0.13:2000/api" // IP fixo da máquina
+        }
     }
     
     private fun sendDataToAPI(image: Bitmap) {
@@ -270,12 +273,17 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         executor.execute {
             try {
-                val url = URL(getApiBaseUrl())
+                val apiUrl = getApiBaseUrl()
+                Log.d("API_CONNECTION", "Tentando conectar em: $apiUrl")
+                
+                val url = URL(apiUrl)
                 val connection = url.openConnection() as HttpURLConnection
                 
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json")
                 connection.doOutput = true
+                connection.connectTimeout = 10000 // 10 segundos
+                connection.readTimeout = 10000
                 
                 // Convert image to base64
                 val baos = ByteArrayOutputStream()
@@ -297,13 +305,14 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 connection.outputStream.write(jsonString.toByteArray())
                 
                 val responseCode = connection.responseCode
+                Log.d("API_RESPONSE", "Response code: $responseCode")
                 
                 runOnUiThread {
                     if (responseCode == HttpURLConnection.HTTP_OK) {
                         Toast.makeText(this@MainActivity, "Dados enviados com sucesso!", Toast.LENGTH_SHORT).show()
                         startCountdown()
                     } else {
-                        Toast.makeText(this@MainActivity, "Erro ao enviar dados", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Erro ao enviar dados (código: $responseCode)", Toast.LENGTH_SHORT).show()
                     }
                 }
                 
@@ -311,7 +320,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 
             } catch (e: Exception) {
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Log.e("API_ERROR", "Erro de conexão: ${e.message}", e)
+                    Toast.makeText(this@MainActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -417,14 +427,18 @@ class MainActivity : AppCompatActivity(), LocationListener {
         executor.execute {
             try {
                 val macAddress = getMacAddress()
-                val url = URL("${getApiBaseUrl()}/$macAddress")
+                val apiUrl = "${getApiBaseUrl()}/$macAddress"
+                Log.d("API_CONNECTION", "Carregando registros de: $apiUrl")
+                
+                val url = URL(apiUrl)
                 val connection = url.openConnection() as HttpURLConnection
                 
                 connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
                 
                 val responseCode = connection.responseCode
+                Log.d("API_RESPONSE", "Response code para loadRecords: $responseCode")
                 
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().readText()
@@ -452,7 +466,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
                     }
                 } else {
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Erro ao carregar registros", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Erro ao carregar registros (código: $responseCode)", Toast.LENGTH_SHORT).show()
                     }
                 }
                 
@@ -460,7 +474,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 
             } catch (e: Exception) {
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Log.e("API_ERROR", "Erro ao carregar registros: ${e.message}", e)
+                    Toast.makeText(this@MainActivity, "Erro de conexão ao carregar registros: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
