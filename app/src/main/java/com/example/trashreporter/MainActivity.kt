@@ -18,8 +18,10 @@ import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import android.graphics.BitmapFactory
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -41,7 +43,8 @@ import java.util.concurrent.Executors
 data class ReportRecord(
     val coords: String,
     val datetime: String,
-    val status: String
+    val status: String,
+    val image: String? = null  // Base64 encoded image
 )
 
 // Adapter para a RecyclerView
@@ -52,6 +55,7 @@ class RecordsAdapter(private val records: List<ReportRecord>) :
         val tvCoords: TextView = view.findViewById(R.id.tv_coords)
         val tvDatetime: TextView = view.findViewById(R.id.tv_datetime)
         val tvStatus: TextView = view.findViewById(R.id.tv_status)
+        val ivReportImage: ImageView = view.findViewById(R.id.iv_report_image)
     }
     
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
@@ -65,6 +69,25 @@ class RecordsAdapter(private val records: List<ReportRecord>) :
         holder.tvCoords.text = "Coordenadas: ${record.coords}"
         holder.tvDatetime.text = "Data: ${record.datetime}"
         holder.tvStatus.text = "Status: ${record.status}"
+        
+        // Lidar com a imagem
+        if (record.image != null && record.image.isNotEmpty()) {
+            try {
+                // Decodifica a imagem base64
+                val imageBytes = Base64.decode(record.image, Base64.DEFAULT)
+                val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                
+                holder.ivReportImage.setImageBitmap(bitmap)
+                holder.ivReportImage.visibility = View.VISIBLE
+            } catch (e: Exception) {
+                // Se há erro ao decodificar, esconde a imagem
+                holder.ivReportImage.visibility = View.GONE
+                Log.e("IMAGE_DECODE", "Erro ao decodificar imagem: ${e.message}")
+            }
+        } else {
+            // Se não há imagem, esconde a ImageView
+            holder.ivReportImage.visibility = View.GONE
+        }
     }
     
     override fun getItemCount() = records.size
@@ -451,7 +474,9 @@ class MainActivity : AppCompatActivity(), LocationListener {
                             ReportRecord(
                                 coords = item.getString("coords"),
                                 datetime = item.getString("datetime"),
-                                status = item.getString("status")
+                                status = item.getString("status"),
+                                image = if (item.has("image") && !item.isNull("image")) 
+                                    item.getString("image") else null
                             )
                         )
                     }

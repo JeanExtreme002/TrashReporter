@@ -19,6 +19,7 @@ class ReportRecord(BaseModel):
     coords: str
     datetime: str
     status: str
+    image: Optional[str] = None  # Base64 encoded image
 
 # Inicializa a aplicação FastAPI
 app = FastAPI(
@@ -36,29 +37,34 @@ mock_reports = {
         {
             "coords": "-23.5505, -46.6333",
             "datetime": "26/06/2025 14:30:00",
-            "status": "Processado"
+            "status": "Processado",
+            "image": None
         },
         {
             "coords": "-23.5489, -46.6388",
             "datetime": "25/06/2025 09:15:30",
-            "status": "Em Análise"
+            "status": "Em Análise",
+            "image": None
         },
         {
             "coords": "-23.5512, -46.6298",
             "datetime": "24/06/2025 16:45:12",
-            "status": "Resolvido"
+            "status": "Resolvido",
+            "image": None
         }
     ],
     "aa:bb:cc:dd:ee:ff": [
         {
             "coords": "-23.5520, -46.6350",
             "datetime": "26/06/2025 11:20:45",
-            "status": "Pendente"
+            "status": "Pendente",
+            "image": None
         },
         {
             "coords": "-23.5480, -46.6400",
             "datetime": "23/06/2025 13:10:22",
-            "status": "Processado"
+            "status": "Processado",
+            "image": None
         }
     ]
 }
@@ -100,7 +106,7 @@ async def create_report(report: ReportRequest):
         if not report.image:
             raise HTTPException(status_code=400, detail="Imagem é obrigatória")
         
-        if len(report.image) < 100:  # Validação básica do base64
+        if len(report.image) < 10:  # Validação básica do base64 (reduzida)
             raise HTTPException(status_code=400, detail="Imagem inválida")
         
         # Simula validação de coordenadas
@@ -117,7 +123,8 @@ async def create_report(report: ReportRequest):
         new_record = {
             "coords": coords_str,
             "datetime": current_time,
-            "status": "Recebido"
+            "status": "Recebido",
+            "image": report.image  # Armazena a imagem base64
         }
         
         # Adiciona ao banco de dados

@@ -11,63 +11,83 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Icon -->
-        <TextView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="📍"
-            android:textSize="24sp"
-            android:gravity="center"
-            android:background="@drawable/icon_background"
-            android:layout_marginEnd="16dp"
-            android:layout_gravity="center_vertical" />
-
-        <!-- Content -->
+        <!-- Header com ícone e conteúdo -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
 
+            <!-- Icon -->
             <TextView
-                android:id="@+id/tv_coords"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Coordenadas: -23.5505, -46.6333"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:layout_marginBottom="4dp" />
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="📍"
+                android:textSize="24sp"
+                android:gravity="center"
+                android:background="@drawable/icon_background"
+                android:layout_marginEnd="16dp"
+                android:layout_gravity="center_vertical" />
 
-            <TextView
-                android:id="@+id/tv_datetime"
-                android:layout_width="match_parent"
+            <!-- Content -->
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Data: 26/06/2025 14:30:00"
-                android:textSize="12sp"
-                android:textColor="#B3B3B3"
-                android:alpha="0.8"
-                android:layout_marginBottom="4dp"
-                android:drawableStart="@drawable/ic_calendar"
-                android:drawablePadding="8dp"
-                android:gravity="center_vertical" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tv_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Status: Processado"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@color/accent_green"
-                android:background="@drawable/status_background"
-                android:padding="6dp"
-                android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tv_coords"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Coordenadas: -23.5505, -46.6333"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tv_datetime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Data: 26/06/2025 14:30:00"
+                    android:textSize="12sp"
+                    android:textColor="#B3B3B3"
+                    android:alpha="0.8"
+                    android:layout_marginBottom="4dp"
+                    android:drawableStart="@drawable/ic_calendar"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical" />
+
+                <TextView
+                    android:id="@+id/tv_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Status: Processado"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/accent_green"
+                    android:background="@drawable/status_background"
+                    android:padding="6dp"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
 
         </LinearLayout>
+
+        <!-- Imagem (se existir) -->
+        <ImageView
+            android:id="@+id/iv_report_image"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="8dp"
+            android:scaleType="centerCrop"
+            android:background="@drawable/image_background"
+            android:contentDescription="Imagem do report"
+            android:visibility="gone" />
 
     </LinearLayout>
 
