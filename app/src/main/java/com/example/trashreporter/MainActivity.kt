@@ -59,6 +59,7 @@ class RecordsAdapter(private val records: List<ReportRecord>) :
         val tvStatus: TextView = view.findViewById(R.id.tv_status)
         val tvComment: TextView = view.findViewById(R.id.tv_comment)
         val ivReportImage: ImageView = view.findViewById(R.id.iv_report_image)
+        val btnOpenMaps: Button = view.findViewById(R.id.btn_open_maps)
     }
     
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
@@ -99,9 +100,59 @@ class RecordsAdapter(private val records: List<ReportRecord>) :
             // Se não há imagem, esconde a ImageView
             holder.ivReportImage.visibility = View.GONE
         }
+        
+        // Configurar botão do Google Maps
+        holder.btnOpenMaps.setOnClickListener {
+            openGoogleMaps(holder.itemView.context, record.coords)
+        }
     }
     
     override fun getItemCount() = records.size
+    
+    private fun openGoogleMaps(context: Context, coords: String) {
+        try {
+            // Parse das coordenadas (formato: "latitude, longitude")
+            val coordParts = coords.split(",")
+            if (coordParts.size != 2) {
+                Toast.makeText(context, "Coordenadas inválidas", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
+            val latitude = coordParts[0].trim().toDoubleOrNull()
+            val longitude = coordParts[1].trim().toDoubleOrNull()
+            
+            if (latitude == null || longitude == null) {
+                Toast.makeText(context, "Erro ao processar coordenadas", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
+            // Criar label para o marcador
+            val label = "Report TrashReporter"
+            
+            // Criar intent para Google Maps com marcador personalizado
+            val gmmIntentUri = android.net.Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude($label)")
+            val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+            mapIntent.setPackage("com.google.android.apps.maps")
+            
+            // Verificar se Google Maps está instalado
+            if (mapIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(mapIntent)
+                Log.d("MAPS_INTENT", "Abrindo Google Maps com coordenadas: $latitude, $longitude")
+                Toast.makeText(context, "Abrindo no Google Maps...", Toast.LENGTH_SHORT).show()
+            } else {
+                // Fallback para navegador web se Google Maps não estiver instalado
+                val webIntent = Intent(Intent.ACTION_VIEW, 
+                    android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=$latitude,$longitude"))
+                context.startActivity(webIntent)
+                Log.d("MAPS_INTENT", "Google Maps não instalado, abrindo no navegador")
+                Toast.makeText(context, "Abrindo no navegador...", Toast.LENGTH_SHORT).show()
+            }
+            
+        } catch (e: Exception) {
+            Log.e("MAPS_ERROR", "Erro ao abrir Google Maps: ${e.message}", e)
+            Toast.makeText(context, "Erro ao abrir mapa: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
 }
 
 class MainActivity : AppCompatActivity(), LocationListener {
