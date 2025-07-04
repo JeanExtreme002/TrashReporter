@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/background_dark">
+
+    <!-- Título -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Comentário"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary_dark"
+        android:layout_marginBottom="8dp"
+        android:fontFamily="sans-serif-medium" />
+
+    <!-- Subtítulo -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Adicione um comentário sobre o problema encontrado"
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary_dark"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Preview da imagem capturada -->
+    <ImageView
+        android:id="@+id/iv_preview"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/rounded_corner_background"
+        android:scaleType="centerCrop"
+        android:contentDescription="Preview da foto capturada" />
+
+    <!-- Informações de localização -->
+    <TextView
+        android:id="@+id/tv_location_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📍 Obtendo localização..."
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary_dark"
+        android:layout_marginBottom="24dp"
+        android:layout_gravity="center_horizontal" />
+
+    <!-- Campo de comentário -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Comentário:"
+        android:textSize="16sp"
+        android:textColor="@color/text_primary_dark"
+        android:layout_marginBottom="8dp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/et_comment"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:background="@drawable/edittext_background"
+        android:padding="16dp"
+        android:hint="Descreva o problema encontrado, localização específica, gravidade, etc."
+        android:textColorHint="@color/text_secondary_dark"
+        android:textColor="@color/text_primary_dark"
+        android:textSize="16sp"
+        android:gravity="top|start"
+        android:inputType="textMultiLine|textCapSentences"
+        android:maxLength="500"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Contador de caracteres -->
+    <TextView
+        android:id="@+id/tv_char_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0/500"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary_dark"
+        android:layout_gravity="end"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Spacer para empurrar botões para baixo -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Botões -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="❌ Cancelar"
+            android:textColor="@color/text_secondary_dark"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/button_secondary_background"
+            android:elevation="2dp" />
+
+        <Button
+            android:id="@+id/btn_send"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="📤 Enviar Report"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/button_primary_background"
+            android:elevation="4dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

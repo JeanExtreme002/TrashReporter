@@ -36,6 +36,12 @@
         <activity
             android:name=".MainActivity"
             android:exported="false" />
+            
+        <!-- Comment Activity -->
+        <activity
+            android:name=".CommentActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
     </application>
 
 </manifest>

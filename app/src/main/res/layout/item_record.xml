@@ -78,6 +78,19 @@
 
         </LinearLayout>
 
+        <!-- Comentário (se existir) -->
+        <TextView
+            android:id="@+id/tv_comment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="💬 Comentário: Lixo acumulado na esquina"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary_dark"
+            android:background="@drawable/comment_background"
+            android:padding="12dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
+
         <!-- Imagem (se existir) -->
         <ImageView
             android:id="@+id/iv_report_image"

@@ -45,7 +45,8 @@ data class ReportRecord(
     val coords: String,
     val datetime: String,
     val status: String,
-    val image: String? = null  // Base64 encoded image
+    val image: String? = null,  // Base64 encoded image
+    val comment: String? = null  // User comment
 )
 
 // Adapter para a RecyclerView
@@ -56,6 +57,7 @@ class RecordsAdapter(private val records: List<ReportRecord>) :
         val tvCoords: TextView = view.findViewById(R.id.tv_coords)
         val tvDatetime: TextView = view.findViewById(R.id.tv_datetime)
         val tvStatus: TextView = view.findViewById(R.id.tv_status)
+        val tvComment: TextView = view.findViewById(R.id.tv_comment)
         val ivReportImage: ImageView = view.findViewById(R.id.iv_report_image)
     }
     
@@ -70,6 +72,14 @@ class RecordsAdapter(private val records: List<ReportRecord>) :
         holder.tvCoords.text = "Coordenadas: ${record.coords}"
         holder.tvDatetime.text = "Data: ${record.datetime}"
         holder.tvStatus.text = "Status: ${record.status}"
+        
+        // Lidar com comentário
+        if (record.comment != null && record.comment.isNotEmpty()) {
+            holder.tvComment.text = "💬 Comentário: ${record.comment}"
+            holder.tvComment.visibility = View.VISIBLE
+        } else {
+            holder.tvComment.visibility = View.GONE
+        }
         
         // Lidar com a imagem
         if (record.image != null && record.image.isNotEmpty()) {
@@ -122,7 +132,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
             val data: Intent? = result.data
             capturedImage = data?.extras?.get("data") as? Bitmap
             capturedImage?.let {
-                sendDataToAPI(it)
+                openCommentScreen(it)
             }
         }
     }
@@ -209,6 +219,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         // Check if there's an active countdown
         checkCountdownState()
+        
+        // Check if we should start countdown (returning from CommentActivity)
+        if (intent.getBooleanExtra("start_countdown", false)) {
+            startCountdown()
+        }
         
         // Start with report screen
         showReportScreen()
@@ -306,6 +321,27 @@ class MainActivity : AppCompatActivity(), LocationListener {
         }
     }
     
+    private fun openCommentScreen(image: Bitmap) {
+        if (currentLocation == null) {
+            Toast.makeText(this, "Erro: Localização não disponível", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Convert bitmap to byte array to pass via intent
+        val baos = ByteArrayOutputStream()
+        image.compress(Bitmap.CompressFormat.JPEG, 90, baos)
+        val imageBytes = baos.toByteArray()
+
+        val intent = Intent(this, CommentActivity::class.java).apply {
+            putExtra("image", imageBytes)
+            putExtra("latitude", currentLocation!!.latitude)
+            putExtra("longitude", currentLocation!!.longitude)
+            putExtra("macAddress", getMacAddress())
+        }
+        
+        startActivity(intent)
+    }
+    
     @SuppressLint("HardwareIds")
     private fun getMacAddress(): String {
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
@@ -357,65 +393,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 val fallbackUrl = "http://10.208.16.44:2000/api"
                 Log.w("API_URL", "Usando URL de fallback: $fallbackUrl")
                 fallbackUrl
-            }
-        }
-    }
-    
-    private fun sendDataToAPI(image: Bitmap) {
-        val executor = Executors.newSingleThreadExecutor()
-        
-        executor.execute {
-            try {
-                val apiUrl = getApiBaseUrl()
-                Log.d("API_CONNECTION", "Tentando conectar em: $apiUrl")
-                
-                val url = URL(apiUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                
-                connection.requestMethod = "POST"
-                connection.setRequestProperty("Content-Type", "application/json")
-                connection.doOutput = true
-                connection.connectTimeout = 10000 // 10 segundos
-                connection.readTimeout = 10000
-                
-                // Convert image to base64
-                val baos = ByteArrayOutputStream()
-                image.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-                val imageBytes = baos.toByteArray()
-                val imageBase64 = Base64.encodeToString(imageBytes, Base64.DEFAULT)
-                
-                // Create JSON payload
-                val jsonObject = JSONObject().apply {
-                    put("image", imageBase64)
-                    put("coords", JSONObject().apply {
-                        put("latitude", currentLocation?.latitude ?: 0.0)
-                        put("longitude", currentLocation?.longitude ?: 0.0)
-                    })
-                    put("id", getMacAddress())
-                }
-                
-                val jsonString = jsonObject.toString()
-                connection.outputStream.write(jsonString.toByteArray())
-                
-                val responseCode = connection.responseCode
-                Log.d("API_RESPONSE", "Response code: $responseCode")
-                
-                runOnUiThread {
-                    if (responseCode == HttpURLConnection.HTTP_OK) {
-                        Toast.makeText(this@MainActivity, "Dados enviados com sucesso!", Toast.LENGTH_SHORT).show()
-                        startCountdown()
-                    } else {
-                        Toast.makeText(this@MainActivity, "Erro ao enviar dados (código: $responseCode)", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                
-                connection.disconnect()
-                
-            } catch (e: Exception) {
-                runOnUiThread {
-                    Log.e("API_ERROR", "Erro de conexão: ${e.message}", e)
-                    Toast.makeText(this@MainActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_LONG).show()
-                }
             }
         }
     }
@@ -566,7 +543,9 @@ class MainActivity : AppCompatActivity(), LocationListener {
                                 datetime = item.getString("datetime"),
                                 status = item.getString("status"),
                                 image = if (item.has("image") && !item.isNull("image")) 
-                                    item.getString("image") else null
+                                    item.getString("image") else null,
+                                comment = if (item.has("comment") && !item.isNull("comment")) 
+                                    item.getString("comment") else null
                             )
                         )
                     }

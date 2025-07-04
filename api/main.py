@@ -14,12 +14,14 @@ class ReportRequest(BaseModel):
     image: str  # Base64 encoded image
     coords: Coordinates
     id: str  # MAC address
+    comment: Optional[str] = None  # User comment about the report
 
 class ReportRecord(BaseModel):
     coords: str
     datetime: str
     status: str
     image: Optional[str] = None  # Base64 encoded image
+    comment: Optional[str] = None  # User comment
 
 # Inicializa a aplicação FastAPI
 app = FastAPI(
@@ -33,40 +35,29 @@ reports_db = {}
 
 # Dados mockados para demonstração
 mock_reports = {
-#     "02:00:00:00:00:00": [
-#         {
-#             "coords": "-23.5505, -46.6333",
-#             "datetime": "26/06/2025 14:30:00",
-#             "status": "Processado",
-#             "image": None
-#         },
-#         {
-#             "coords": "-23.5489, -46.6388",
-#             "datetime": "25/06/2025 09:15:30",
-#             "status": "Em Análise",
-#             "image": None
-#         },
-#         {
-#             "coords": "-23.5512, -46.6298",
-#             "datetime": "24/06/2025 16:45:12",
-#             "status": "Resolvido",
-#             "image": None
-#         }
-#     ],
-#     "aa:bb:cc:dd:ee:ff": [
-#         {
-#             "coords": "-23.5520, -46.6350",
-#             "datetime": "26/06/2025 11:20:45",
-#             "status": "Pendente",
-#             "image": None
-#         },
-#         {
-#             "coords": "-23.5480, -46.6400",
-#             "datetime": "23/06/2025 13:10:22",
-#             "status": "Processado",
-#             "image": None
-#         }
-#     ]
+    "02:00:00:00:00:00": [
+        {
+            "coords": "-23.5505, -46.6333",
+            "datetime": "26/06/2025 14:30:00",
+            "status": "Processado",
+            "image": None,
+            "comment": "Lixo acumulado na esquina da rua principal. Precisa de limpeza urgente."
+        },
+        {
+            "coords": "-23.5489, -46.6388",
+            "datetime": "25/06/2025 09:15:30",
+            "status": "Em Análise",
+            "image": None,
+            "comment": "Entulho jogado no meio da calçada, dificultando a passagem de pedestres."
+        },
+        {
+            "coords": "-23.5512, -46.6298",
+            "datetime": "24/06/2025 16:45:12",
+            "status": "Resolvido",
+            "image": None,
+            "comment": None
+        }
+    ]
 }
 
 # Inicializa o banco de dados mock
@@ -124,7 +115,8 @@ async def create_report(report: ReportRequest):
             "coords": coords_str,
             "datetime": current_time,
             "status": "Recebido",
-            "image": report.image  # Armazena a imagem base64
+            "image": report.image,  # Armazena a imagem base64
+            "comment": report.comment  # Armazena o comentário do usuário
         }
         
         # Adiciona ao banco de dados
