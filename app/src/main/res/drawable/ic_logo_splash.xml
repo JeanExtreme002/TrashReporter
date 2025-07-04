@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Background circle -->
+    <path
+        android:fillColor="#FF6B35"
+        android:pathData="M60,10 A50,50 0,1,1 60,110 A50,50 0,1,1 60,10 Z" />
+
+    <!-- Trash can body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,45 L80,45 L80,85 Q80,90 75,90 L45,90 Q40,90 40,85 Z" />
+
+    <!-- Trash can lid -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M35,40 L85,40 Q87,40 87,42 Q87,44 85,44 L35,44 Q33,44 33,42 Q33,40 35,40 Z" />
+
+    <!-- Handle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,35 L70,35 Q72,35 72,33 L72,32 Q72,30 70,30 L50,30 Q48,30 48,32 L48,33 Q48,35 50,35 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1" />
+
+    <!-- Vertical lines on trash can -->
+    <path
+        android:strokeColor="#FF6B35"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M50,50 L50,80" />
+    
+    <path
+        android:strokeColor="#FF6B35"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M60,50 L60,80" />
+        
+    <path
+        android:strokeColor="#FF6B35"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M70,50 L70,80" />
+
+</vector>

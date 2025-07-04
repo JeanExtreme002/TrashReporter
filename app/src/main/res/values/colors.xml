@@ -48,4 +48,11 @@
     <color name="navigation_selected">#FF6B35</color>
     <color name="navigation_unselected_light">#9E9E9E</color>
     <color name="navigation_unselected_dark">#6E7681</color>
+    
+    <!-- Splash screen colors -->
+    <color name="splash_background">#0D1117</color>
+    <color name="splash_text">#FFFFFF</color>
+    <color name="splash_text_secondary">#B3B3B3</color>
+    <color name="splash_progress">#FF6B35</color>
+    <color name="splash_progress_background">#30363D</color>
 </resources>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/splash_background"
+    android:padding="32dp">
+
+    <!-- Logo/Imagem do app -->
+    <ImageView
+        android:id="@+id/iv_logo"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="24dp"
+        android:src="@drawable/ic_logo_splash"
+        android:contentDescription="TrashReporter Logo" />
+
+    <!-- Nome do app -->
+    <TextView
+        android:id="@+id/tv_app_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TrashReporter"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="@color/splash_text"
+        android:layout_marginBottom="32dp"
+        android:fontFamily="sans-serif-medium" />
+
+    <!-- Barra de progresso -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:indeterminate="false"
+        android:max="100"
+        android:progress="0"
+        android:progressTint="@color/splash_progress"
+        android:progressBackgroundTint="@color/splash_progress_background" />
+
+    <!-- Texto de carregamento -->
+    <TextView
+        android:id="@+id/tv_loading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Carregando..."
+        android:textSize="16sp"
+        android:textColor="@color/splash_text_secondary"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout>
