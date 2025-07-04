@@ -10,6 +10,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.provider.MediaStore
@@ -251,12 +252,25 @@ class MainActivity : AppCompatActivity(), LocationListener {
         }
     }
     
+    private fun getApiBaseUrl(): String {
+        // Para emulador Android, localhost é acessível via 10.0.2.2
+        // Para dispositivo físico na mesma rede, use o IP da máquina
+        return "http://10.0.2.2:2000/api"
+        
+        // Alternativa: detectar automaticamente
+        // return if (Build.FINGERPRINT.contains("generic")) {
+        //     "http://10.0.2.2:2000/api" // Emulador
+        // } else {
+        //     "http://192.168.1.100:2000/api" // Dispositivo físico (substitua pelo IP da sua máquina)
+        // }
+    }
+    
     private fun sendDataToAPI(image: Bitmap) {
         val executor = Executors.newSingleThreadExecutor()
         
         executor.execute {
             try {
-                val url = URL("http://localhost:2000/api")
+                val url = URL(getApiBaseUrl())
                 val connection = url.openConnection() as HttpURLConnection
                 
                 connection.requestMethod = "POST"
@@ -403,7 +417,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         executor.execute {
             try {
                 val macAddress = getMacAddress()
-                val url = URL("http://localhost:2000/api/$macAddress")
+                val url = URL("${getApiBaseUrl()}/$macAddress")
                 val connection = url.openConnection() as HttpURLConnection
                 
                 connection.requestMethod = "GET"
