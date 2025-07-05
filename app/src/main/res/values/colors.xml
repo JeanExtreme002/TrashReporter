@@ -5,6 +5,7 @@
     <color name="white">#FFFFFFFF</color>
     
     <!-- Primary colors -->
+    <color name="primary_color">#FF6B35</color>
     <color name="primary_light">#1976D2</color>
     <color name="primary_dark">#0D47A1</color>
     <color name="primary_variant">#3F51B5</color>
@@ -41,6 +42,8 @@
     <color name="button_primary_gradient_end">#F7931E</color>
     <color name="button_primary_dark_gradient_start">#FF5722</color>
     <color name="button_primary_dark_gradient_end">#FF9800</color>
+    <color name="text_button_primary">#FFFFFF</color>
+    <color name="text_button_secondary">#FF6B35</color>
     
     <!-- Navigation colors -->
     <color name="navigation_background_light">#FAFAFA</color>

@@ -142,6 +142,15 @@ class CommentActivity : AppCompatActivity() {
         
         executor.execute {
             try {
+                val token = getAuthToken()
+                if (token == null) {
+                    runOnUiThread {
+                        Toast.makeText(this@CommentActivity, "Erro: Token de autenticação não encontrado", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                    return@execute
+                }
+                
                 val apiUrl = getApiBaseUrl()
                 Log.d("API_CONNECTION", "Tentando conectar em: $apiUrl")
                 
@@ -150,6 +159,7 @@ class CommentActivity : AppCompatActivity() {
                 
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json")
+                connection.setRequestProperty("Authorization", "Bearer $token")
                 connection.doOutput = true
                 connection.connectTimeout = 10000 // 10 segundos
                 connection.readTimeout = 10000
@@ -208,6 +218,11 @@ class CommentActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun getAuthToken(): String? {
+        val prefs = getSharedPreferences("user_session", MODE_PRIVATE)
+        return prefs.getString("access_token", null)
     }
 
     private fun getApiBaseUrl(): String {

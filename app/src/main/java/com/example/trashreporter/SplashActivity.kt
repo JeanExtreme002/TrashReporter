@@ -64,17 +64,35 @@ class SplashActivity : AppCompatActivity() {
                 }
             }
             
-            // Quando terminar, aguarda um pouco e vai para MainActivity
+            // Quando terminar, verifica se o usuário está logado
             handler.postDelayed({
-                val intent = Intent(this@SplashActivity, MainActivity::class.java)
-                startActivity(intent)
-                finish()
-                
-                // Adiciona animação de transição suave
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                checkUserSession()
             }, 100) // Pequeno delay após completar
             
         }.start()
+    }
+
+    private fun checkUserSession() {
+        val prefs = getSharedPreferences("user_session", MODE_PRIVATE)
+        val token = prefs.getString("access_token", null)
+        val loginTime = prefs.getLong("login_time", 0)
+        
+        // Verifica se o token existe e não expirou (30 minutos)
+        val isTokenValid = token != null && 
+            (System.currentTimeMillis() - loginTime) < (30 * 60 * 1000)
+        
+        val intent = if (isTokenValid) {
+            Intent(this@SplashActivity, MainActivity::class.java)
+        } else {
+            // Token expirado ou não existe, vai para login
+            Intent(this@SplashActivity, LoginActivity::class.java)
+        }
+        
+        startActivity(intent)
+        finish()
+        
+        // Adiciona animação de transição suave
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 
     @Deprecated("Deprecated in Java")

@@ -32,6 +32,18 @@
             </intent-filter>
         </activity>
         
+        <!-- Login Activity -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TrashReporter.Dark" />
+            
+        <!-- Register Activity -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TrashReporter.Dark" />
+        
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"

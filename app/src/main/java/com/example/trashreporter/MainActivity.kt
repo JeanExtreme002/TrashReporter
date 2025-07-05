@@ -16,22 +16,29 @@ import android.os.CountDownTimer
 import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
+import android.view.MenuItem
 import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import android.graphics.BitmapFactory
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.navigation.NavigationView
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -155,12 +162,18 @@ class RecordsAdapter(private val records: List<ReportRecord>) :
     }
 }
 
-class MainActivity : AppCompatActivity(), LocationListener {
+class MainActivity : AppCompatActivity(), LocationListener, NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var btnReport: Button
     private lateinit var btnResetCountdown: Button
     private lateinit var tvCountdown: TextView
     private lateinit var locationManager: LocationManager
+    
+    // Navigation Drawer
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navigationView: NavigationView
+    private lateinit var toolbar: Toolbar
+    private lateinit var btnMenu: ImageButton
     
     // Navigation
     private lateinit var btnNavReport: Button
@@ -193,8 +206,28 @@ class MainActivity : AppCompatActivity(), LocationListener {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         
         super.onCreate(savedInstanceState)
+        
+        // Verifica se o usuário está autenticado
+        if (!checkAuthAndRedirect()) {
+            return // Se não está autenticado, já foi redirecionado
+        }
+        
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+        
+        // Initialize drawer views
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.nav_view)
+        toolbar = findViewById(R.id.toolbar)
+        btnMenu = findViewById(R.id.btn_menu)
+        
+        // Set up navigation view
+        navigationView.setNavigationItemSelectedListener(this)
+        
+        // Set up menu button click
+        btnMenu.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.START)
+        }
         
         // Initialize views
         btnReport = findViewById(R.id.btn_report)
@@ -212,7 +245,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         // Setup RecyclerView
         rvRecords.layoutManager = LinearLayoutManager(this)
         
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_content)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -278,6 +311,9 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         // Start with report screen
         showReportScreen()
+        
+        // Update navigation header with user info
+        updateNavigationHeader()
         
         // Teste de configuração (debug)
         testConfigReading()
@@ -567,6 +603,15 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         executor.execute {
             try {
+                val token = getAuthToken()
+                if (token == null) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Erro: Token de autenticação não encontrado", Toast.LENGTH_SHORT).show()
+                        checkAuthAndRedirect()
+                    }
+                    return@execute
+                }
+                
                 val macAddress = getMacAddress()
                 val apiUrl = "${getApiBaseUrl()}/$macAddress"
                 Log.d("API_CONNECTION", "Carregando registros de: $apiUrl")
@@ -575,6 +620,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 val connection = url.openConnection() as HttpURLConnection
                 
                 connection.requestMethod = "GET"
+                connection.setRequestProperty("Authorization", "Bearer $token")
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
                 
@@ -730,5 +776,106 @@ class MainActivity : AppCompatActivity(), LocationListener {
         }
         
         builder.show()
+    }
+    
+    private fun getAuthToken(): String? {
+        val prefs = getSharedPreferences("user_session", MODE_PRIVATE)
+        return prefs.getString("access_token", null)
+    }
+    
+    private fun checkAuthAndRedirect(): Boolean {
+        val token = getAuthToken()
+        if (token == null) {
+            // Usuário não está logado, redireciona para login
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+            return false
+        }
+        return true
+    }
+    
+    private fun showLogoutDialog() {
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("🚪 Fazer Logout")
+        builder.setMessage("Tem certeza que deseja sair da sua conta?")
+        
+        builder.setPositiveButton("✅ Sim, sair") { _, _ ->
+            performLogout()
+        }
+        
+        builder.setNegativeButton("❌ Cancelar") { dialog, _ ->
+            dialog.dismiss()
+        }
+        
+        builder.show()
+    }
+    
+    private fun performLogout() {
+        // Clear user session
+        val prefs = getSharedPreferences("user_session", MODE_PRIVATE)
+        prefs.edit().clear().apply()
+        
+        // Redirect to login
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+        
+        Toast.makeText(this, "Logout realizado com sucesso", Toast.LENGTH_SHORT).show()
+    }
+    
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_reports -> {
+                showReportScreen()
+                drawerLayout.closeDrawer(GravityCompat.START)
+                return true
+            }
+            R.id.nav_history -> {
+                showRecordsScreen()
+                drawerLayout.closeDrawer(GravityCompat.START)
+                return true
+            }
+            R.id.nav_profile -> {
+                Toast.makeText(this, "Perfil - Em breve", Toast.LENGTH_SHORT).show()
+                drawerLayout.closeDrawer(GravityCompat.START)
+                return true
+            }
+            R.id.nav_settings -> {
+                Toast.makeText(this, "Configurações - Em breve", Toast.LENGTH_SHORT).show()
+                drawerLayout.closeDrawer(GravityCompat.START)
+                return true
+            }
+            R.id.nav_logout -> {
+                drawerLayout.closeDrawer(GravityCompat.START)
+                showLogoutDialog()
+                return true
+            }
+        }
+        return false
+    }
+    
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
+        }
+    }
+    
+    private fun updateNavigationHeader() {
+        val headerView = navigationView.getHeaderView(0)
+        val tvUserName = headerView.findViewById<TextView>(R.id.tv_user_name)
+        val tvUserEmail = headerView.findViewById<TextView>(R.id.tv_user_email)
+        
+        // Get user info from SharedPreferences
+        val prefs = getSharedPreferences("user_session", MODE_PRIVATE)
+        val userName = prefs.getString("user_name", "Usuário")
+        val userEmail = prefs.getString("user_email", "usuario@email.com")
+        
+        tvUserName.text = userName ?: "Usuário"
+        tvUserEmail.text = userEmail ?: "usuario@email.com"
     }
 }

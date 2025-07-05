@@ -1,14 +1,48 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import uvicorn
 import json
+import hashlib
+import jwt
+from passlib.context import CryptContext
+
+# Configurações de segurança
+SECRET_KEY = "trash_reporter_secret_key_2025"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Configuração de hashing de senhas
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
 
 # Modelos de dados
 class Coordinates(BaseModel):
     latitude: float
     longitude: float
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class User(BaseModel):
+    id: str
+    email: str
+    name: str
+    created_at: str
+    is_active: bool = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: User
 
 class ReportRequest(BaseModel):
     image: str  # Base64 encoded image
@@ -22,6 +56,7 @@ class ReportRecord(BaseModel):
     status: str
     image: Optional[str] = None  # Base64 encoded image
     comment: Optional[str] = None  # User comment
+    user_email: Optional[str] = None  # Email do usuário que fez o report
 
 # Inicializa a aplicação FastAPI
 app = FastAPI(
@@ -32,6 +67,62 @@ app = FastAPI(
 
 # Base de dados em memória (mock)
 reports_db = {}
+users_db = {}  # Base de dados de usuários
+
+# Funções de autenticação
+def verify_password(plain_password, hashed_password):
+    """Verifica se a senha está correta"""
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    """Gera hash da senha"""
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Cria token JWT"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verifica e decodifica o token JWT"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return email
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except jwt.JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+def get_current_user(email: str = Depends(verify_token)):
+    """Obtém o usuário atual baseado no token"""
+    user = users_db.get(email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário não encontrado",
+        )
+    return user
 
 # Dados mockados para demonstração
 mock_reports = {
@@ -41,39 +132,177 @@ mock_reports = {
             "datetime": "26/06/2025 14:30:00",
             "status": "Processado",
             "image": None,
-            "comment": "Lixo acumulado na esquina da rua principal. Precisa de limpeza urgente."
+            "comment": "Lixo acumulado na esquina da rua principal. Precisa de limpeza urgente.",
+            "user_email": "demo@gmail.com"
         },
         {
             "coords": "-23.5489, -46.6388",
             "datetime": "25/06/2025 09:15:30",
             "status": "Em Análise",
             "image": None,
-            "comment": "Entulho jogado no meio da calçada, dificultando a passagem de pedestres."
+            "comment": "Entulho jogado no meio da calçada, dificultando a passagem de pedestres.",
+            "user_email": "demo@gmail.com"
         },
         {
             "coords": "-23.5512, -46.6298",
             "datetime": "24/06/2025 16:45:12",
             "status": "Resolvido",
             "image": None,
-            "comment": None
+            "comment": None,
+            "user_email": "demo@gmail.com"
         }
     ]
 }
 
+# Usuário demo para testes
+demo_user = {
+    "id": "demo_user_001",
+    "email": "demo@gmail.com",
+    "name": "Usuário Demo",
+    "password_hash": get_password_hash("123456"),
+    "created_at": "01/07/2025 10:00:00",
+    "is_active": True
+}
+
 # Inicializa o banco de dados mock
 reports_db.update(mock_reports)
+users_db["demo@gmail.com"] = demo_user
+
+# ========== ENDPOINTS DE AUTENTICAÇÃO ==========
+
+@app.post("/auth/register", response_model=Token)
+async def register(user_data: UserCreate):
+    """
+    Endpoint para registrar um novo usuário
+    """
+    # Verificar se o email já existe
+    if user_data.email in users_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email já cadastrado"
+        )
+    
+    # Criar novo usuário
+    user_id = f"user_{len(users_db) + 1:03d}"
+    hashed_password = get_password_hash(user_data.password)
+    
+    new_user = {
+        "id": user_id,
+        "email": user_data.email,
+        "name": user_data.name,
+        "password_hash": hashed_password,
+        "created_at": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        "is_active": True
+    }
+    
+    # Salvar usuário
+    users_db[user_data.email] = new_user
+    
+    # Criar token de acesso
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user_data.email}, expires_delta=access_token_expires
+    )
+    
+    # Criar objeto User para resposta (sem senha)
+    user_response = User(
+        id=new_user["id"],
+        email=new_user["email"],
+        name=new_user["name"],
+        created_at=new_user["created_at"],
+        is_active=new_user["is_active"]
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user_response
+    }
+
+@app.post("/auth/login", response_model=Token)
+async def login(user_credentials: UserLogin):
+    """
+    Endpoint para login do usuário
+    """
+    # Verificar se o usuário existe
+    user = users_db.get(user_credentials.email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email ou senha incorretos"
+        )
+    
+    # Verificar senha
+    if not verify_password(user_credentials.password, user["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email ou senha incorretos"
+        )
+    
+    # Verificar se usuário está ativo
+    if not user["is_active"]:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário inativo"
+        )
+    
+    # Criar token de acesso
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user_credentials.email}, expires_delta=access_token_expires
+    )
+    
+    # Criar objeto User para resposta (sem senha)
+    user_response = User(
+        id=user["id"],
+        email=user["email"],
+        name=user["name"],
+        created_at=user["created_at"],
+        is_active=user["is_active"]
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user_response
+    }
+
+@app.get("/auth/me", response_model=User)
+async def get_me(current_user: dict = Depends(get_current_user)):
+    """
+    Endpoint para obter informações do usuário atual
+    """
+    user_response = User(
+        id=current_user["id"],
+        email=current_user["email"],
+        name=current_user["name"],
+        created_at=current_user["created_at"],
+        is_active=current_user["is_active"]
+    )
+    return user_response
+
+# ========== ENDPOINTS PRINCIPAIS ==========
 
 @app.get("/")
 async def root():
     """Endpoint raiz - informações da API"""
     return {
-        "message": "TrashReporter API",
-        "version": "1.0.0",
-        "description": "API para sistema de denúncias de lixo urbano",
+        "message": "TrashReporter API v2.0",
+        "version": "2.0.0",
+        "description": "API para sistema de denúncias de lixo urbano com autenticação",
+        "features": ["Sistema de autenticação", "Reports com usuários", "JWT tokens"],
         "endpoints": {
-            "POST /api": "Enviar novo report",
-            "GET /api/{mac_address}": "Buscar reports por MAC address",
+            "POST /auth/register": "Registrar novo usuário",
+            "POST /auth/login": "Fazer login",
+            "GET /auth/me": "Informações do usuário atual",
+            "POST /api": "Enviar novo report (requer auth)",
+            "GET /api/{mac_address}": "Buscar reports por MAC (requer auth)",
             "GET /health": "Status da API"
+        },
+        "demo_user": {
+            "email": "demo@gmail.com",
+            "password": "123456",
+            "note": "Use essas credenciais para testar a API"
         }
     }
 
@@ -87,9 +316,9 @@ async def health_check():
     }
 
 @app.post("/api")
-async def create_report(report: ReportRequest):
+async def create_report(report: ReportRequest, current_user: dict = Depends(get_current_user)):
     """
-    Endpoint para criar um novo report
+    Endpoint para criar um novo report (AUTENTICADO)
     Recebe imagem em base64, coordenadas e MAC address
     """
     try:
@@ -116,7 +345,8 @@ async def create_report(report: ReportRequest):
             "datetime": current_time,
             "status": "Recebido",
             "image": report.image,  # Armazena a imagem base64
-            "comment": report.comment  # Armazena o comentário do usuário
+            "comment": report.comment,  # Armazena o comentário do usuário
+            "user_email": current_user["email"]  # Email do usuário logado
         }
         
         # Adiciona ao banco de dados
@@ -143,9 +373,9 @@ async def create_report(report: ReportRequest):
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @app.get("/api/{mac_address}")
-async def get_reports(mac_address: str) -> List[ReportRecord]:
+async def get_reports(mac_address: str, current_user: dict = Depends(get_current_user)) -> List[ReportRecord]:
     """
-    Endpoint para buscar reports por MAC address
+    Endpoint para buscar reports por MAC address (AUTENTICADO)
     Retorna lista de reports do dispositivo
     """
     try:
