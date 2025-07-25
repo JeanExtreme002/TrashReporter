@@ -236,7 +236,7 @@ class RegisterActivity : AppCompatActivity() {
             ConfigReader.getApiBaseUrl(this).replace("/api", "")
         } catch (e: Exception) {
             Log.e("API_URL", "Erro ao obter URL da API: ${e.message}")
-            "http://10.208.16.44:2000"
+            "http://10.119.99.44:2000"
         }
     }
 }

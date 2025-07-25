@@ -241,7 +241,7 @@ class CommentActivity : AppCompatActivity() {
                 ConfigReader.getApiBaseUrl(this)
             } catch (e: Exception) {
                 Log.e("API_URL", "Erro ao carregar configuração: ${e.message}", e)
-                "http://10.208.16.44:2000/api" // Fallback
+                "http://10.119.99.44:2000/api" // Fallback
             }
         }
     }

@@ -57,7 +57,7 @@ object ConfigReader {
             if (configMap.isEmpty()) {
                 Log.w(TAG, "❌ Arquivo .env está vazio ou não contém configurações válidas")
                 // Valores padrão
-                configMap["API_HOST"] = "10.208.16.44"
+                configMap["API_HOST"] = "10.119.99.44"
                 configMap["API_PORT"] = "2000"
                 Log.d(TAG, "Usando valores padrão")
             } else {
@@ -71,7 +71,7 @@ object ConfigReader {
             Log.e(TAG, "Erro ao carregar arquivo .env: ${e.message}", e)
             Log.w(TAG, "Usando valores padrão")
             // Valores padrão
-            configMap["API_HOST"] = "10.208.16.44"
+            configMap["API_HOST"] = "10.119.99.44"
             configMap["API_PORT"] = "2000"
             
             config = configMap
@@ -82,7 +82,7 @@ object ConfigReader {
     
     fun getApiHost(context: Context): String {
         val config = loadConfig(context)
-        val host = config["API_HOST"] ?: "10.208.16.44"
+        val host = config["API_HOST"] ?: "10.119.99.44"
         
         // Verifica a origem da configuração
         val isFromPreferences = hasPreferencesConfig(context)

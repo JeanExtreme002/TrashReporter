@@ -477,7 +477,7 @@ class MainActivity : AppCompatActivity(), LocationListener, NavigationView.OnNav
                 apiUrl
             } catch (e: Exception) {
                 Log.e("API_URL", "Erro ao carregar configuração: ${e.message}", e)
-                val fallbackUrl = "http://10.208.16.44:2000/api"
+                val fallbackUrl = "http://10.119.99.44:2000/api"
                 Log.w("API_URL", "Usando URL de fallback: $fallbackUrl")
                 fallbackUrl
             }
@@ -752,7 +752,7 @@ class MainActivity : AppCompatActivity(), LocationListener, NavigationView.OnNav
         builder.setMessage("IP atual: $currentConfig\nOrigem: $configSource\n\n⚠️ Se alterou o .env, use 'Reset' primeiro")
         
         val input = android.widget.EditText(this)
-        input.hint = "Ex: 10.208.16.44"
+        input.hint = "Ex: 10.119.99.44"
         input.setText(currentHost)
         builder.setView(input)
         
