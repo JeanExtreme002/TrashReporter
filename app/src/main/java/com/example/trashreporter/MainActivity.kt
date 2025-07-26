@@ -305,9 +305,7 @@ class MainActivity : AppCompatActivity(), LocationListener, NavigationView.OnNav
         checkCountdownState()
         
         // Check if we should start countdown (returning from CommentActivity)
-        if (intent.getBooleanExtra("start_countdown", false)) {
-            startCountdown()
-        }
+        checkForCountdownStart()
         
         // Start with report screen
         showReportScreen()
@@ -320,6 +318,20 @@ class MainActivity : AppCompatActivity(), LocationListener, NavigationView.OnNav
         
         // Testar leitura da configuração (modo debug)
         testConfigReading()
+    }
+    
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        
+        // Check if we should start countdown (returning from CommentActivity)
+        checkForCountdownStart()
+    }
+    
+    private fun checkForCountdownStart() {
+        if (intent.getBooleanExtra("start_countdown", false)) {
+            startCountdown()
+        }
     }
     
     private fun checkPermissions(): Boolean {
